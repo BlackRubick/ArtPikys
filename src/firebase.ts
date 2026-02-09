@@ -5,7 +5,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyB-JXNaSCAu4IfAX4O0U2rbVZGAEm20ZP4",
   authDomain: "pikis-7abfa.firebaseapp.com",
   projectId: "pikis-7abfa",
-  storageBucket: "pikis-7abfa.appspot.com", // Corrige: .app → .appspot.com
+  storageBucket: "pikis-7abfa.appspot.com",
   messagingSenderId: "565539620077",
   appId: "1:565539620077:web:1bbe2323a3eb37610db8e4",
   measurementId: "G-41Q6PYH0M0"
