@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { db } from './firebase'
 import {
   collection,
-  getDocs,
   addDoc,
   updateDoc,
   deleteDoc,
-  doc
+  doc,
+  onSnapshot
 } from 'firebase/firestore'
+import type { QuerySnapshot, DocumentData } from 'firebase/firestore';
 import {
   NavLink,
   Route,
@@ -450,9 +451,9 @@ function App() {
 
   // Escuchar productos en tiempo real desde Firestore
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
+    const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot: QuerySnapshot<DocumentData>) => {
       const productsData: Product[] = [];
-      snapshot.forEach((doc) => {
+      snapshot.forEach((doc: DocumentData) => {
         productsData.push({ id: doc.id, ...doc.data() } as Product);
       });
       setProducts(productsData);
