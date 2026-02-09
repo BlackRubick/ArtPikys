@@ -1,4 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { db } from './firebase'
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc
+} from 'firebase/firestore'
 import {
   NavLink,
   Route,
@@ -46,82 +55,6 @@ const buildWhatsappLink = (name: string) =>
   )}`
 const buildWhatsappChatLink = () => `https://wa.me/${WHATSAPP_NUMBER}`
 
-const defaultProducts: Product[] = [
-  {
-    id: 'p1',
-    name: 'Canasto de mimbre tejido a mano',
-    price: 45,
-    image:
-      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1462901236706-1e7e1b57f823?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=800&q=80'
-    ],
-    description: 'Hecho con fibras naturales y acabado artesanal.',
-    materials: ['Mimbre reciclado', 'Tintes naturales', 'Barniz al agua'],
-    story: 'Tejido por manos locales con fibras recuperadas de canastos antiguos.',
-    category: 'Hogar',
-    isNew: true,
-    limited: true,
-    featured: true
-  },
-  {
-    id: 'p2',
-    name: 'Cerámica esmaltada turquesa',
-    price: 38,
-    image:
-      'https://images.unsplash.com/photo-1493666438817-866a91353ca9?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1493666438817-866a91353ca9?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1489486501123-5c1af10d0be6?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1496318447583-f524534e9ce1?auto=format&fit=crop&w=800&q=80'
-    ],
-    description: 'Piezas únicas con brillo suave y textura orgánica.',
-    materials: ['Arcilla reciclada', 'Esmalte mineral', 'Pigmentos naturales'],
-    story: 'Reinterpretación de técnicas cerámicas tradicionales con materiales locales.',
-    category: 'Decoración',
-    isNew: false,
-    limited: true
-  },
-  {
-    id: 'p3',
-    name: 'Bolso bordado en telar',
-    price: 62,
-    image:
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80'
-    ],
-    description: 'Detalles en hilo de algodón, ideal para uso diario.',
-    materials: ['Algodón reciclado', 'Tintes vegetales', 'Forro de lino'],
-    story: 'Inspirado en patrones chiapanecos y elaborado en telar de cintura.',
-    category: 'Moda',
-    isNew: true,
-    limited: false,
-    featured: true
-  },
-  {
-    id: 'p4',
-    name: 'Velas aromáticas artesanales',
-    price: 24,
-    image:
-      'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=800&q=80'
-    ],
-    description: 'Mezcla de esencias naturales para un ambiente cálido.',
-    materials: ['Cera vegetal reciclada', 'Esencias botánicas', 'Mechas de algodón'],
-    story: 'Elaboradas en lotes pequeños con recipientes reutilizables.',
-    category: 'Bienestar',
-    isNew: false,
-    limited: false
-  }
-]
 
 const blogPosts: BlogPost[] = [
   {
@@ -514,13 +447,18 @@ function App() {
     { to: '/admin', label: 'Administrador' }
   ]
 
+
+  // Cargar productos desde Firestore al iniciar
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      setProducts(JSON.parse(stored) as Product[])
-    } else {
-      setProducts(defaultProducts)
-    }
+    const fetchProducts = async () => {
+      const querySnapshot = await getDocs(collection(db, 'products'));
+      const productsData: Product[] = [];
+      querySnapshot.forEach((doc) => {
+        productsData.push({ id: doc.id, ...doc.data() } as Product);
+      });
+      setProducts(productsData);
+    };
+    fetchProducts();
 
     const auth = localStorage.getItem(AUTH_KEY)
     setIsAuthed(auth === 'true')
@@ -653,23 +591,29 @@ function App() {
       materials: parsedMaterials.length ? parsedMaterials : ['Material reciclado']
     }
 
-    let updatedProducts: Product[] = [];
-    if (editingId) {
-      updatedProducts = products.map((product) =>
-        product.id === editingId ? { ...product, ...normalizedForm } : product
-      );
-    } else {
-      const newProduct: Product = {
-        id: `p${Date.now()}`,
-        ...normalizedForm
-      };
-      updatedProducts = [newProduct, ...products];
-    }
-    setProducts(updatedProducts);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProducts));
-    setEditingId(null);
-    setForm(emptyForm);
-    setMaterialsText('');
+    const saveProduct = async () => {
+      if (editingId) {
+        // Actualizar producto existente
+        const productRef = doc(db, 'products', editingId);
+        await updateDoc(productRef, normalizedForm);
+        setProducts((prev) =>
+          prev.map((product) =>
+            product.id === editingId ? { ...product, ...normalizedForm } : product
+          )
+        );
+      } else {
+        // Agregar nuevo producto
+        const docRef = await addDoc(collection(db, 'products'), normalizedForm);
+        setProducts((prev) => [
+          { id: docRef.id, ...normalizedForm },
+          ...prev
+        ]);
+      }
+      setEditingId(null);
+      setForm(emptyForm);
+      setMaterialsText('');
+    };
+    saveProduct();
   }
 
   const handleEdit = useCallback((product: Product) => {
@@ -693,13 +637,16 @@ function App() {
   const handleDelete = (id: string) => {
     const confirmDelete = window.confirm('¿Eliminar este producto?')
     if (!confirmDelete) return
-    const updatedProducts = products.filter((product) => product.id !== id);
-    setProducts(updatedProducts);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProducts));
-    if (editingId === id) {
-      setEditingId(null);
-      setForm(emptyForm);
-    }
+    const deleteProduct = async () => {
+      await deleteDoc(doc(db, 'products', id));
+      const updatedProducts = products.filter((product) => product.id !== id);
+      setProducts(updatedProducts);
+      if (editingId === id) {
+        setEditingId(null);
+        setForm(emptyForm);
+      }
+    };
+    deleteProduct();
   }
 
   const resetForm = useCallback(() => {
