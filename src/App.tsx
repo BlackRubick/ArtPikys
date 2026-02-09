@@ -653,23 +653,23 @@ function App() {
       materials: parsedMaterials.length ? parsedMaterials : ['Material reciclado']
     }
 
+    let updatedProducts: Product[] = [];
     if (editingId) {
-      setProducts((prev) =>
-        prev.map((product) =>
-          product.id === editingId ? { ...product, ...normalizedForm } : product
-        )
-      )
+      updatedProducts = products.map((product) =>
+        product.id === editingId ? { ...product, ...normalizedForm } : product
+      );
     } else {
       const newProduct: Product = {
         id: `p${Date.now()}`,
         ...normalizedForm
-      }
-      setProducts((prev) => [newProduct, ...prev])
+      };
+      updatedProducts = [newProduct, ...products];
     }
-
-    setEditingId(null)
-    setForm(emptyForm)
-    setMaterialsText('')
+    setProducts(updatedProducts);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProducts));
+    setEditingId(null);
+    setForm(emptyForm);
+    setMaterialsText('');
   }
 
   const handleEdit = useCallback((product: Product) => {
@@ -693,10 +693,12 @@ function App() {
   const handleDelete = (id: string) => {
     const confirmDelete = window.confirm('¿Eliminar este producto?')
     if (!confirmDelete) return
-    setProducts((prev) => prev.filter((product) => product.id !== id))
+    const updatedProducts = products.filter((product) => product.id !== id);
+    setProducts(updatedProducts);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProducts));
     if (editingId === id) {
-      setEditingId(null)
-      setForm(emptyForm)
+      setEditingId(null);
+      setForm(emptyForm);
     }
   }
 
