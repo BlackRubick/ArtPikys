@@ -448,21 +448,20 @@ function App() {
   ]
 
 
-  // Cargar productos desde Firestore al iniciar
+  // Escuchar productos en tiempo real desde Firestore
   useEffect(() => {
-    const fetchProducts = async () => {
-      const querySnapshot = await getDocs(collection(db, 'products'));
+    const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
       const productsData: Product[] = [];
-      querySnapshot.forEach((doc) => {
+      snapshot.forEach((doc) => {
         productsData.push({ id: doc.id, ...doc.data() } as Product);
       });
       setProducts(productsData);
-    };
-    fetchProducts();
-
+      console.log('Productos actualizados en tiempo real:', productsData);
+    });
     const auth = localStorage.getItem(AUTH_KEY)
-    setIsAuthed(auth === 'true')
-  }, [])
+    setIsAuthed(auth === 'true');
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
