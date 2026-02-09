@@ -592,26 +592,33 @@ function App() {
     }
 
     const saveProduct = async () => {
-      if (editingId) {
-        // Actualizar producto existente
-        const productRef = doc(db, 'products', editingId);
-        await updateDoc(productRef, normalizedForm);
-        setProducts((prev) =>
-          prev.map((product) =>
-            product.id === editingId ? { ...product, ...normalizedForm } : product
-          )
-        );
-      } else {
-        // Agregar nuevo producto
-        const docRef = await addDoc(collection(db, 'products'), normalizedForm);
-        setProducts((prev) => [
-          { id: docRef.id, ...normalizedForm },
-          ...prev
-        ]);
+      try {
+        if (editingId) {
+          // Actualizar producto existente
+          const productRef = doc(db, 'products', editingId);
+          await updateDoc(productRef, normalizedForm);
+          setProducts((prev) =>
+            prev.map((product) =>
+              product.id === editingId ? { ...product, ...normalizedForm } : product
+            )
+          );
+          console.log('Producto actualizado en Firestore:', editingId);
+        } else {
+          // Agregar nuevo producto
+          const docRef = await addDoc(collection(db, 'products'), normalizedForm);
+          setProducts((prev) => [
+            { id: docRef.id, ...normalizedForm },
+            ...prev
+          ]);
+          console.log('Producto agregado en Firestore:', docRef.id);
+        }
+        setEditingId(null);
+        setForm(emptyForm);
+        setMaterialsText('');
+      } catch (error) {
+        console.error('Error guardando producto en Firestore:', error);
+        alert('Error guardando producto en Firestore. Revisa la consola.');
       }
-      setEditingId(null);
-      setForm(emptyForm);
-      setMaterialsText('');
     };
     saveProduct();
   }
@@ -638,12 +645,18 @@ function App() {
     const confirmDelete = window.confirm('¿Eliminar este producto?')
     if (!confirmDelete) return
     const deleteProduct = async () => {
-      await deleteDoc(doc(db, 'products', id));
-      const updatedProducts = products.filter((product) => product.id !== id);
-      setProducts(updatedProducts);
-      if (editingId === id) {
-        setEditingId(null);
-        setForm(emptyForm);
+      try {
+        await deleteDoc(doc(db, 'products', id));
+        const updatedProducts = products.filter((product) => product.id !== id);
+        setProducts(updatedProducts);
+        if (editingId === id) {
+          setEditingId(null);
+          setForm(emptyForm);
+        }
+        console.log('Producto eliminado en Firestore:', id);
+      } catch (error) {
+        console.error('Error eliminando producto en Firestore:', error);
+        alert('Error eliminando producto en Firestore. Revisa la consola.');
       }
     };
     deleteProduct();
