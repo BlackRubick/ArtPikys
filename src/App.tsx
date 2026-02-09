@@ -458,11 +458,17 @@ function App() {
       });
       setProducts(productsData);
       console.log('Productos actualizados en tiempo real:', productsData);
+      if (productsData.length === 0) {
+        console.warn('No se recibieron productos desde Firestore.');
+      }
     });
     const auth = localStorage.getItem(AUTH_KEY)
     setIsAuthed(auth === 'true');
     return () => unsubscribe();
   }, []);
+  useEffect(() => {
+    console.log('Render principal, productos:', products);
+  }, [products]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
